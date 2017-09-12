@@ -3,17 +3,24 @@ package hynra.github.com.smartscheduler_test;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
+
+import io.hypertrack.smart_scheduler.Job;
+import io.hypertrack.smart_scheduler.SmartScheduler;
 
 public class ForegroundService extends Service {
     private static final String LOG_TAG = "ForegroundService";
     public static boolean IS_SERVICE_RUNNING = false;
+    private static final int JOB_ID = 1;
+    private static final String JOB_PERIODIC_TASK_TAG = "io.hypertrack.android_scheduler_demo.JobPeriodicTask";
 
     @Override
     public void onCreate() {
@@ -46,8 +53,58 @@ public class ForegroundService extends Service {
             stopForeground(true);
             stopSelf();
         }
+
+        SmartScheduler jobScheduler = SmartScheduler.getInstance(this);
+        Job job = createJob();
+        if (jobScheduler.addJob(job))
+            Toast.makeText(getApplicationContext(), "Job successfully added!", Toast.LENGTH_SHORT).show();
+
+
+
+
         return START_STICKY;
     }
+
+
+    private Job createJob() {
+        int jobType = Job.Type.JOB_TYPE_PERIODIC_TASK;
+        int networkType = Job.NetworkType.NETWORK_TYPE_ANY;
+        boolean requiresCharging = false;
+        boolean isPeriodic = true;
+
+        String intervalInMillisString = "5000";
+        if (TextUtils.isEmpty(intervalInMillisString)) {
+            return null;
+        }
+
+        Long intervalInMillis = Long.parseLong(intervalInMillisString);
+        Job.Builder builder = new Job.Builder(JOB_ID, new SmartScheduler.JobScheduledCallback() {
+            @Override
+            public void onJobScheduled(Context context, Job job) {
+                if (job != null) {
+                    Log.d("shit", "Job: " + job.getJobId() + " scheduled!");
+
+                    if (!job.isPeriodic()) {
+
+                    }
+                }
+            }
+        }, jobType, JOB_PERIODIC_TASK_TAG)
+                .setRequiredNetworkType(networkType)
+                .setRequiresCharging(requiresCharging)
+                .setIntervalMillis(intervalInMillis);
+
+        if (isPeriodic) {
+            builder.setPeriodic(intervalInMillis);
+        }
+
+        return builder.build();
+    }
+
+
+
+
+
 
     private void showNotification() {
         Intent notificationIntent = new Intent(this, MainActivity.class);
